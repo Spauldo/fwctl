@@ -1,0 +1,11 @@
+*.[oa]
+*.bbl
+*.blg
+*.bbl
+*.tex
+*.pyg
+*.pyc
+*~
+\#*#
+fwctl
+fwkids
