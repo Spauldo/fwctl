@@ -70,10 +70,24 @@ OpenBSD's pf FAQ has a section on anchors.
 Client Installation:
 --------------------
 
-First, install Python and wxWidgets.  Then place the python script somewhere and
-set it to autostart.  Two flags can be passed to the program; -s for the
-server's address or name, and -p for the port number.  You can omit the port
-number if using the default port.
+*TODO* fwgui.py does not work yet!  Don't use it!
+
+There are two clients: fwclient.py and fwgui.py.  fwclient.py is a command-line
+program, while fwgui.py is made to run in the notification bar (systray on
+Windows).
+
+First, install Python.  To use fwgui.py, you also need wxPython.
+
+Place the python scripts somewhere appropriate (fwclient.py should probably be
+in your PATH, if you plan on using it from the command line).
+
+If using fwgui.py, it must be in the same directory as fwclient.py, as it
+uses functions from it.  fwclient.py does not require fwgui.py.  Set fwgui.py
+to autostart with -s and optionally -p options.
+
+On UNIX-like systems, make sure fwclient.py and fwgui.py are executable, or
+call them with python2.  I haven't tested fwclient.py with Python 3.x; it may
+work.  fwgui.py requires Python 2.x (tested with 2.7).
 
 That's about as exact as I can get, since each system is different.
 
@@ -81,7 +95,13 @@ That's about as exact as I can get, since each system is different.
 Use:
 ----
 
-When the client is running, an icon will represent the current state of the
+To use fwclient.py, use -s to specify the server (address or name) and -c to
+specify the command string (one of FUP, FDN, or FST - see protocol notes
+below).  If you're using a different port (default is 2287), specify this with
+-p.  fwclient.py will return a message indicating if it was successful or what
+the current status of the firewall is.
+
+When fwgui.py is running, an icon will represent the current state of the
 firewall.  Hovering over the icon will bring up a tooltip that gives a text
 representation of the current state.  Activating the icon (by, say,
 right-clicking on Windows, for instance) will bring up a menu where the state
@@ -126,15 +146,15 @@ on the firewall can bring the anchor up and down at will.
 
 I use it to control if one computer, a smart TV, and a game console have access
 to the internet.  The kids get grounded a lot, and I'm not always around to
-ssh in and do it manually.
+ssh in and adjust firewall rules manually.
 
 Note that I only flush the rules, not active connections.  This means that any
 connections already in progress will still go through.  If that is an issue for
 you, you'll need to edit pfkids.c and change the call to pf from "-F rules" to
 "-F all".  I haven't tested that, so if you do, drop me a line and let me know
-if it works.
+if it works.  I have... reasons for doing it this way.
 
-The fwkids executable required SUID root because it runs pfctl directly.  This
+The fwkids executable requires SUID root because it runs pfctl directly.  This
 is a bit awkward, since that means there are two executables instead of just
 the one.  I could have put it all in one binary, but that would have meant
 having a network listener running as root, and I'm not confident enough in my
@@ -149,6 +169,10 @@ This is why I use Python 2.7.
 
 TODO:
 -----
+
+Finish fwgui.py.
+
+I need to write manpages.
 
 The install process should be automated.
 
@@ -180,5 +204,5 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 Changelog:
 ----------
 
-0.1 First release
+0.1 First release - fwgui.py is not working yet
 
