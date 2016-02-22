@@ -1,0 +1,184 @@
+fwctl - A simple firewall control system
+
+This set of programs is designed to activate or deactivate an anchor on an
+OpenBSD firewall.  The client should be run under a system that supports
+wxWidget's wxTaskBarIcon (this would be things like Windows' systray or KDE's
+SystemTray).  wxWidgets and Python 2.7 are required for the client.  The server
+only requires OpenBSD.
+
+This can use IPv4 or IPv6, or both, depending on the -a flag.
+
+The fwkids executable requires SUID root.  See 'Caveats' for more information.
+
+
+Server Installation:
+--------------------
+
+There is no "install" target for make.  You have to install manually.
+
+Decompress the archive.
+
+Edit the fwctl.rc file and change the IP address in "daemon_flags" to the
+IP address you want fwctl to listen on.  This should be your INTERNAL address.
+Running this on your external address would allow anyone on the internet to
+play with your firewall.  (It might be a good idea to block this port explicitly
+and only allow the controlling machines access.)  Save the file.
+
+Edit the file fwkids.c and change the filename read by pfctl.  This will be
+near the top, in this line:
+
+  char *cmd_fwup[]   = {"pfctl", "-a", "kids", "-f",
+			      "/etc/pf.anchor.kids-blocked", NULL};
+
+(the filename is "/etc/pf.anchor.kids-blocked")
+
+Save the file and enter the following commands:
+  cd <archive_name>
+  make
+
+(as root:)
+  cp fwctl.rc /etc/rc.d/fwctl
+  cp fwctl /usr/local/sbin
+  cp fwkids /usr/local/sbin
+  chown root:wheel /etc/rc.d/fwctl
+  chown root:wheel /usr/local/sbin/fwctl
+  chown root:wheel /usr/local/sbin/fwkids
+  chmod 555 /etc/rc.d/fwctl
+  chmod 755 /usr/local/sbin/fwctl
+  chmod 4755 /usr/local/sbin/fwkids
+
+Edit your /etc/rc.conf.local and add something like this:
+
+  fwctl_flags="-a 192.168.0.1"
+
+You can us a name or an address for the -a flag, but it must point to the
+internal IP address of your firewall.  If you use a name instead of an address,
+and that name maps to more than one address, fwctl will listen to all of them.
+This is useful if you want both IPv4 and IPv6 clients.
+
+Now, you need firewall rules.  I won't go into detail - pf is a complicated
+subject better explained elsewhere.  They key point is that you want to put the
+commands you want to toggle in an anchor (a self-contained script the main
+script can refer to).  The anchor rules must be in a file (the sort pfctl can
+reference with -f).  Bringing the firewall "up" will set the anchor rules to
+those in the file; bringing "down" the firewall will flush the rules, leaving
+the anchor empty.
+
+OpenBSD's pf FAQ has a section on anchors.
+
+
+Client Installation:
+--------------------
+
+First, install Python and wxWidgets.  Then place the python script somewhere and
+set it to autostart.  Two flags can be passed to the program; -s for the
+server's address or name, and -p for the port number.  You can omit the port
+number if using the default port.
+
+That's about as exact as I can get, since each system is different.
+
+
+Use:
+----
+
+When the client is running, an icon will represent the current state of the
+firewall.  Hovering over the icon will bring up a tooltip that gives a text
+representation of the current state.  Activating the icon (by, say,
+right-clicking on Windows, for instance) will bring up a menu where the state
+can be changed.
+
+There may be a short lag between the time the user sends the command and the
+time the icon changes.  This is normal, if for whatever reason there is a lag
+in the network code.
+
+
+Protocol Details:
+-----------------
+
+The client-server protocol is a very simple, request-response system.  The
+client sends a command as a UDP packet containing three characters, and the
+server responds with a UDP packet also containing three characters.
+
+Commands and Responses are as follows:
+
+Command | Meaning                   | Response | Meaning
+--------+---------------------------+----------+-------------------------------
+  FST   | Report firewall status    | FUP      | Anchor rules are in place
+        |                           | FDN      | Anchor rules are empty
+	|                           | ERR      | An error has occurred
+  FUP   | Bring up the anchor       | ACK      | Anchor rules have been added
+        |                           | ERR      | An error has occurred
+  FDN   | Take down the anchor      | ACK      | Anchor rules have been flushed
+        |                           | ERR      | An error has occurred
+
+If any other command is sent, the server will respond with NAK.
+
+
+Caveats:
+--------
+
+This is special purpose software, not a general purpose tool.  I've written it
+for my own use.  I make this code available for others who wish to do something
+similar, but I have little interest in expanding its utility.  A full-on
+firewall control system should have authentication, for one - as it stands,
+anyone who can throw three characters into a UDP packet and send it to a socket
+on the firewall can bring the anchor up and down at will.
+
+I use it to control if one computer, a smart TV, and a game console have access
+to the internet.  The kids get grounded a lot, and I'm not always around to
+ssh in and do it manually.
+
+Note that I only flush the rules, not active connections.  This means that any
+connections already in progress will still go through.  If that is an issue for
+you, you'll need to edit pfkids.c and change the call to pf from "-F rules" to
+"-F all".  I haven't tested that, so if you do, drop me a line and let me know
+if it works.
+
+The fwkids executable required SUID root because it runs pfctl directly.  This
+is a bit awkward, since that means there are two executables instead of just
+the one.  I could have put it all in one binary, but that would have meant
+having a network listener running as root, and I'm not confident enough in my
+C skills to risk that.  I have tried to keep the bare minimum necessary in
+fwkids.c to minimize the risk of exploits.  If the firewall machine is
+multiuser (WHY?), it would be best to set the permissions to 4750 and assign
+the group to match the group fwctl runs as.
+
+At the time of this writing, wxWidgets does not have full support for Python 3.
+This is why I use Python 2.7.
+
+
+TODO:
+-----
+
+The install process should be automated.
+
+I should probably add some signal handlers in here.
+
+Rewrite it all in LISP. (just kidding)
+
+
+License and Copyright Information:
+----------------------------------
+
+(this is the ISC license, taken straight from the OpenBSD license.template)
+
+Copyright (c) 2016 Jeff Spaulding <sarnet@gmail.com>
+
+Permission to use, copy, modify, and distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+Changelog:
+----------
+
+0.1 First release
+
