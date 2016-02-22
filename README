@@ -32,6 +32,14 @@ near the top, in this line:
 
 (the filename is "/etc/pf.anchor.kids-blocked")
 
+If you don't want to name your anchor "kids", change the third field in that
+line (and the two below it) to something other than "kids".
+
+See 'Caveats' for why editing fwkids.c is necessary.  If you don't want to edit
+source code, you can name your anchor "kids" and put the rules in
+"/etc/pf.anchor.kids-blocked", and it will work exactly as it does on my
+firewall.
+
 Save the file and enter the following commands:
   cd <archive_name>
   make
@@ -51,7 +59,7 @@ Edit your /etc/rc.conf.local and add something like this:
 
   fwctl_flags="-a 192.168.0.1"
 
-You can us a name or an address for the -a flag, but it must point to the
+You can use a name or an address for the -a flag, but it must point to the
 internal IP address of your firewall.  If you use a name instead of an address,
 and that name maps to more than one address, fwctl will listen to all of them.
 This is useful if you want both IPv4 and IPv6 clients.
@@ -62,9 +70,12 @@ commands you want to toggle in an anchor (a self-contained script the main
 script can refer to).  The anchor rules must be in a file (the sort pfctl can
 reference with -f).  Bringing the firewall "up" will set the anchor rules to
 those in the file; bringing "down" the firewall will flush the rules, leaving
-the anchor empty.
+the anchor empty.  The anchor must be named "kids" or whatever you changed the
+name to in fwkids.c.
 
-OpenBSD's pf FAQ has a section on anchors.
+OpenBSD's pf FAQ has a section on anchors.  If you're unfamiliar with them, I
+suggest getting your anchor working using pfctl first before trying to use this
+software.
 
 
 Client Installation:
@@ -162,6 +173,10 @@ C skills to risk that.  I have tried to keep the bare minimum necessary in
 fwkids.c to minimize the risk of exploits.  If the firewall machine is
 multiuser (WHY?), it would be best to set the permissions to 4750 and assign
 the group to match the group fwctl runs as.
+
+This is also why you have to edit the source of fwkids.c to make changes.  I'd
+rather not have a SUID program reading a config file.  If you want that feature,
+well, here's the source code; go to town with it.
 
 At the time of this writing, wxWidgets does not have full support for Python 3.
 This is why I use Python 2.7.

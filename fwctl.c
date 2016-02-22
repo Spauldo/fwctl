@@ -45,6 +45,7 @@ print_version()
         printf("Copyright (c) 2016 Jeff Spaulding\n");
 }
 
+/* TODO: refactor to move socket code back to main() */
 int
 handle_message(int sock, char *buf, int len, const struct sockaddr *to,
 	       socklen_t *addrlen)
@@ -106,21 +107,23 @@ handle_message(int sock, char *buf, int len, const struct sockaddr *to,
 int
 main(int argc, char *argv[])
 {
-	int ch;
+	int ch;                                /* getopt(3) return value */
 	int i;
 	int error_flag = 0;
 	int debug_flag = 0;
 
-	int sock[MAX_SOCKETS];
+	int sock[MAX_SOCKETS];                 /* We keep sockets in an array */
 	int num_sockets = 0;
 
 	int gai_err, save_error;
 	const char *error_cause = NULL;
 
 	char addrstr[512] = "";
-	char portstr[20] = "2287";
+	char portstr[20] = "2287";             /* default port 2287 */
 
-	struct addrinfo ai_hints, *addr0, *addr1;
+	struct addrinfo ai_hints, *addr0, *addr1; /* default stuff, see
+						     getaddrinfo(3) and any
+						     getaddrinfo example */
 
 	char buf[BUFSIZE];
 	int recvlen;
@@ -183,10 +186,11 @@ main(int argc, char *argv[])
 		if (sock[num_sockets] == -1) {
 			error_cause = "Error creating socket";
 			warn("%s", error_cause);
-			continue;
+			continue; /* use same sock[] index on next attempt */
 		}
 
-		if (bind(sock[num_sockets], addr0->ai_addr, addr0->ai_addrlen) == -1) {
+		if (bind(sock[num_sockets], addr0->ai_addr, addr0->ai_addrlen)
+		    == -1) {
 			error_cause = "Error binding socket";
 			save_error = errno;
 			close(sock[num_sockets]);
@@ -204,7 +208,7 @@ main(int argc, char *argv[])
 	if (num_sockets < 1)
 		errx(1, "Couldn't open any sockets!");
 
-	/* Listen */
+	/* Listen on all sockets */
 
 	for (i = 0; i < num_sockets; i++) {
 		listeners[i].fd = sock[i];
@@ -231,6 +235,7 @@ main(int argc, char *argv[])
 				break;
 			}
 
+			/* TODO: refactor to keep lines < 80 characters */
 			if (listeners[i].revents & POLLIN) {
 				listeners[i].revents = 0;
 				recvlen = recvfrom(sock[i], buf, BUFSIZE, 0,
@@ -242,8 +247,9 @@ main(int argc, char *argv[])
 					error_flag = 1;
 					break;
 				} else {
-					if (! handle_message(sock[i], buf, recvlen,
-							   (struct sockaddr*) &from,
+					if (! handle_message(sock[i], buf,
+							     recvlen,
+							     (struct sockaddr*) &from,
 							   &from_len)) {
 						error_flag = 1;
 						break;
@@ -252,6 +258,7 @@ main(int argc, char *argv[])
 			}
 		}
 
+		/* close down on errors */
 		if (error_flag)
 			break;
 	}
