@@ -37,26 +37,19 @@ class Systray_Icon(wx.TaskBarIcon):
 
     def __init__(self):
         super(Systray_Icon, self).__init__()
-        print "Systray_Icon constructor"
         self.server = ''
         self.port = 0
 
-        # self.icon_up   = wx.Icon(wx.IconFromBitmap(wx.Bitmap('fwup16.png')))
-        # self.icon_up   = wx.Icon('fwup16.png', wx.BITMAP_TYPE_PNG)
-        # self.icon_down = wx.Icon('fwdown16.png', wx.BITMAP_TYPE_PNG)
-        # self.icon_err  = wx.Icon('fwerr16.png', wx.BITMAP_TYPE_PNG)
-
         self.set_icon('err', "Waiting to connect to server.")
+
+        self.check_timer = wx.Timer(self, self.ID_CHECK_TIMER)
 
         self.Bind(wx.EVT_MENU, self.bring_up_firewall, id=self.ID_MENU_UP)
         self.Bind(wx.EVT_MENU, self.bring_down_firewall, id=self.ID_MENU_DOWN)
         self.Bind(wx.EVT_MENU, self.cleanup_and_exit, id=self.ID_MENU_CLOSE)
-
-        self.check_timer = wx.Timer(self, self.ID_CHECK_TIMER)
-        wx.EVT_TIMER(self, self.ID_CHECK_TIMER, self.get_status)
+        self.Bind(wx.EVT_TIMER, self.get_status, self.check_timer)
 
     def start(self, server_address, port_num):
-        print "Systray_Icon start"
         self.server = server_address
         self.port = port_num
         self.get_status()
@@ -73,7 +66,6 @@ class Systray_Icon(wx.TaskBarIcon):
         self.SetIcon(icon, message)
 
     def CreatePopupMenu(self):
-        print "Systray_Icon CreatePopupMenu"
         menu = wx.Menu()
         menu.Append(self.ID_MENU_UP, "Bring Up Firewall")
         menu.Append(self.ID_MENU_DOWN, "Bring Down Firewall")
@@ -81,8 +73,7 @@ class Systray_Icon(wx.TaskBarIcon):
         menu.Append(self.ID_MENU_CLOSE, "Close App")
         return menu
 
-    def get_status(self):
-        print "Systray_Icon get_status"
+    def get_status(self, event=None):
         status = fwclient.do_command(self.server, self.port, 'FST')
         if status == 'SUP':
             self.set_icon('up', "Firewall is up.")
@@ -91,27 +82,27 @@ class Systray_Icon(wx.TaskBarIcon):
         else:
             self.set_icon('err', "Error communicating with server.")
 
-    def bring_up_firewall(self):
-        print "Systray_Icon bring_up_firewall"
+    def bring_up_firewall(self, event=None):
         status = fwclient.do_command(self.server, self.port, 'FUP')
         if status != 'ACK':
             self.set_icon('err', "Error communicating with server.")
         else:
             self.get_status()
 
-    def bring_down_firewall(self):
-        print "Systray_Icon bring_down_firewall"
+    def bring_down_firewall(self, event=None):
         status = fwclient.do_command(self.server, self.port, 'FDN')
         if status != 'ACK':
             self.set_icon('err', "Error communicating with server.")
         else:
             self.get_status()
 
-    def cleanup_and_exit(self):
-        print "Systray_Icon cleanup_and_exit"
+    def cleanup_and_exit(self, event=None):
         self.check_timer.Stop()
         self.RemoveIcon()
-        self.Destroy(self)
+        self.Destroy()
+        # Required because we're using a null top level window.  I'm open to
+        # suggestions for something better.
+        sys.exit()
 
 
 class App(wx.App):
