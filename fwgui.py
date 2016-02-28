@@ -20,6 +20,7 @@ import wx
 
 server = ''
 port = 2287
+poll_interval = 5000 # How often to check the server, in milliseconds
 
 
 def print_help():
@@ -53,7 +54,7 @@ class Systray_Icon(wx.TaskBarIcon):
         self.server = server_address
         self.port = port_num
         self.get_status()
-        self.check_timer.Start(5000)
+        self.check_timer.Start(poll_interval)
 
     def set_icon(self, state, message):
         if state == 'up':
@@ -79,19 +80,25 @@ class Systray_Icon(wx.TaskBarIcon):
             self.set_icon('up', "Firewall is up.")
         elif status == 'SDN':
             self.set_icon('down', "Firewall is down.")
+        elif status == 'EADDR':
+            self.set_icon('err', "Can't find server '", self.server, "'")
         else:
             self.set_icon('err', "Error communicating with server.")
 
     def bring_up_firewall(self, event=None):
         status = fwclient.do_command(self.server, self.port, 'FUP')
-        if status != 'ACK':
+        if status == 'EADDR':
+            self.set_icon('err', "Can't find server '", self.server, "'")
+        elif status != 'ACK':
             self.set_icon('err', "Error communicating with server.")
         else:
             self.get_status()
 
     def bring_down_firewall(self, event=None):
         status = fwclient.do_command(self.server, self.port, 'FDN')
-        if status != 'ACK':
+        if status == 'EADDR':
+            self.set_icon('err', "Can't find server '", self.server, "'")
+        elif status != 'ACK':
             self.set_icon('err', "Error communicating with server.")
         else:
             self.get_status()

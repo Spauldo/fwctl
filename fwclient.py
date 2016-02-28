@@ -24,8 +24,8 @@ import socket
 # -----------------------------------------------------------------------------
 # Functions
 
-# Print the help message
 def print_help():
+    """Print help message and exit."""
     print "fwclient.py <-s server_address> <-p port> [-u | -d] [-h] [-q]"
     print "  -u Load anchor rules"
     print "  -d Clear anchor rules"
@@ -34,10 +34,24 @@ def print_help():
     sys.exit()
 
 
-# Send a command to the server and return the response
-# See README for valid commands and responses
-# Returns EADDR if it cannot resolve the server address
 def do_command(server, port, command):
+    """Send a command to a server and return the server's response.
+
+    Args:
+        server -- name or address of the server
+        port   -- port number to connect to
+        command -- command to send, can be 'FST', 'FUP', or 'FDN'
+
+    Returns:
+        string: The server's response, or an error code
+
+        See README for valid server responses.
+
+        Additional errors are EADDR and ESOCK, for address resolution and
+        socket errors respectively.  These strings are followed by a space and
+        the exception's strerror error message.
+    """
+
     success = False
     s = []
     error = ''
@@ -47,8 +61,10 @@ def do_command(server, port, command):
     try:
         dest_gai = socket.getaddrinfo(server, port, socket.AF_UNSPEC,
                                       socket.SOCK_DGRAM)
+
+    # Return here if there's an error
     except socket.gaierror as e:
-        return 'EADDR'
+        return 'EADDR ' + e.strerror
 
     for i, dest_addr in enumerate(dest_gai):
         try:
@@ -68,7 +84,7 @@ def do_command(server, port, command):
             continue
 
     if success is False:
-        buf = error[:]
+        buf = 'ESOCK ' + error[:]
 
     return buf
 
@@ -131,9 +147,13 @@ def main():
     elif status == 'SDN':
         if not qflag:
             print "Anchor rules are not loaded."
-    elif status == 'EADDR':
+    elif status[0:5] == 'EADDR':
         if not qflag:
-            print "Error resolving host", server
+            print "Error resolving host", server, ":", status[6:]
+        success = False
+    elif status[0:5] == 'ESOCK':
+        if not qflag:
+            print "Socket Error:", status[6:]
         success = False
     else:
         # We should never reach here

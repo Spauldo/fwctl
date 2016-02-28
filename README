@@ -87,7 +87,8 @@ There are two clients: fwclient.py and fwgui.py.  fwclient.py is a command-line
 program, while fwgui.py is made to run in the notification bar (systray on
 Windows).
 
-First, install Python.  To use fwgui.py, you also need wxPython.
+First, install Python 2.x, if it's not already on your system.  To use fwgui.py,
+you also need wxPython.
 
 Place the python scripts somewhere appropriate (fwclient.py should probably be
 in your PATH, if you plan on using it from the command line).
@@ -106,11 +107,12 @@ That's about as exact as I can get, since each system is different.
 Use:
 ----
 
-To use fwclient.py, use -s to specify the server (address or name) and -c to
-specify the command string (one of FUP, FDN, or FST - see protocol notes
-below).  If you're using a different port (default is 2287), specify this with
--p.  fwclient.py will return a message indicating if it was successful or what
-the current status of the firewall is.
+To use fwclient.py, use -s to specify the server (address or name).  Optionally
+set the port with -p (it will default to 2287).  The -u will load the rules
+into the anchor, and -d will clear the rules.  If neither -u nor -d are
+specified, print the current status.  The -q flag suppresses output.  If -q is
+not specified, fwclient.py will return a message indicating if it was successful
+or what the current status of the firewall is.
 
 When fwgui.py is running, an icon will represent the current state of the
 firewall.  Hovering over the icon will bring up a tooltip that gives a text
@@ -121,6 +123,13 @@ can be changed.
 There may be a short lag between the time the user sends the command and the
 time the icon changes.  This is normal, if for whatever reason there is a lag
 in the network code.
+
+
+Client Library:
+---------------
+
+fwclient.py will also act as a python module to handle sending commands to the
+server.  fwgui.py uses it for this purpose.
 
 
 Protocol Details:
