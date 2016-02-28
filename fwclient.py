@@ -26,11 +26,17 @@ import socket
 
 # Print the help message
 def print_help():
-    print "fwclient.py <-s server_address> <-p port> <-c command> [-h]"
+    print "fwclient.py <-s server_address> <-p port> [-u | -d] [-h] [-q]"
+    print "  -u Load anchor rules"
+    print "  -d Clear anchor rules"
+    print "  -q Supress output"
+    print "Anchor status is returned when neither -u or -d is specified."
+    sys.exit()
 
 
 # Send a command to the server and return the response
 # See README for valid commands and responses
+# Returns EADDR if it cannot resolve the server address
 def do_command(server, port, command):
     success = False
     s = []
@@ -42,7 +48,7 @@ def do_command(server, port, command):
         dest_gai = socket.getaddrinfo(server, port, socket.AF_UNSPEC,
                                       socket.SOCK_DGRAM)
     except socket.gaierror as e:
-        print "Error resolving hostname:", e.strerror
+        return 'EADDR'
 
     for i, dest_addr in enumerate(dest_gai):
         try:
@@ -68,16 +74,20 @@ def do_command(server, port, command):
 
 
 # -----------------------------------------------------------------------------
-# Code begins here
+# Interactive code below
 
 # Parse options
 def main():
     server = ''
-    command = ''
+    command = 'FST'
     port = 2287
+    uflag = False
+    dflag = False
+    qflag = False
+    success = True
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 's:p:c:h')
+        options, remainder = getopt.getopt(sys.argv[1:], 's:p:udh')
     except getopt.error:
         print_help()
         sys.exit()
@@ -87,35 +97,57 @@ def main():
             server = arg
         elif opt == '-p':
             port = arg
-        elif opt == '-c':
-            command = arg
+        elif opt == '-d':
+            command = "FDN"
+            dflag = True
+        elif opt == '-u':
+            command = "FUP"
+            uflag = True
+        elif opt == '-q':
+            qflag = True
         elif opt == '-h':
-            print "fwclient.py <-s server_address> <-p server_port>",
-            print "<-c command> [-h]"
-            sys.exit()
+            print_help()
 
-    if (server == '') or (command == ''):
+    if (uflag and dflag):
+        print "Cannot specify -u and -d at the same time."
         print_help()
-        sys.exit()
 
-    if command == 'FST':
-        status = do_command(server, port, command)
-        if status == 'SUP':
+    if (server == ''):
+        print "-s flag is required."
+        print_help()
+
+    status = do_command(server, port, command)
+
+    if status == 'ACK':
+        if not qflag:
+            print "Command succeded."
+    elif status == 'ERR':
+        if not qflag:
+            print "Server returned an error."
+        success = False
+    elif status == 'SUP':
+        if not qflag:
             print "Anchor rules are loaded."
-        elif status == 'SDN':
-            print "Anchor rules are clear."
-        elif status == 'ERR':
-            print "The server returned an error."
-        else:
-            print "An error occurred:", status
-    elif (command == 'FDN') or (command == 'FUP'):
-        status = do_command(server, port, command)
-        if status == 'ACK':
-            print "Command succeeded."
-        else:
-            print "Command failed."
+    elif status == 'SDN':
+        if not qflag:
+            print "Anchor rules are not loaded."
+    elif status == 'EADDR':
+        if not qflag:
+            print "Error resolving host", server
+        success = False
     else:
-        print "Unrecognized command."
+        # We should never reach here
+        if not qflag:
+            if status == 'NAK':
+                print "Server did not understand command ", command
+            else:
+                print "do_command returned unknown response '", status, "'"
+        raise AssertionError
+
+    if (success):
+        return 0
+    else:
+        return 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
