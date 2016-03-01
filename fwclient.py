@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+﻿#!/usr/bin/env python2
 
 # fwclient.py - Client to the fwctl daemon
 
@@ -69,10 +69,11 @@ def do_command(server, port, command):
     for i, dest_addr in enumerate(dest_gai):
         try:
             s = socket.socket(dest_addr[0], socket.SOCK_DGRAM)
-            s.settimeout(1)
+            s.setblocking(1)
 
-            s.sendto(command, dest_addr[4])
-            buf, sender = s.recvfrom(3)
+            s.sendto(command.encode(encoding="ascii"), dest_addr[4])
+            (buf, sender) = s.recvfrom(8)
+            buf = buf[0:3]
 
             success = True
             s.close()
@@ -82,6 +83,8 @@ def do_command(server, port, command):
             error = e.strerror
             s.close()
             continue
+        finally:
+            break
 
     if success is False:
         buf = 'ESOCK ' + error[:]

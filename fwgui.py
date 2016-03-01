@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+﻿#!/usr/bin/env python2
 
 # Copyright(c) 2016 Jeff Spaulding <sarnet@gmail.com>
 # Permission to use, copy, modify, and distribute this software for any
@@ -18,7 +18,7 @@ import getopt
 import fwclient
 import wx
 
-server = ''
+server = 'bart.spauldo.net'
 port = 2287
 poll_interval = 5000 # How often to check the server, in milliseconds
 
@@ -33,7 +33,7 @@ class Systray_Icon(wx.TaskBarIcon):
     ID_MENU_CLOSE  = wx.NewId()
     ID_CHECK_TIMER = wx.NewId()
 
-    server = ''
+    server = 'bart.spauldo.net'
     port = 2287
 
     def __init__(self):
@@ -83,6 +83,7 @@ class Systray_Icon(wx.TaskBarIcon):
         elif status == 'EADDR':
             self.set_icon('err', "Can't find server '", self.server, "'")
         else:
+            print "Error:", status
             self.set_icon('err', "Error communicating with server.")
 
     def bring_up_firewall(self, event=None):
