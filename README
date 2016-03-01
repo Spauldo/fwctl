@@ -41,7 +41,7 @@ source code, you can name your anchor "kids" and put the rules in
 firewall.
 
 Save the file and enter the following commands:
-  cd <archive_name>
+  cd <archive_name>/server
   make
 
 (as root:)
@@ -80,8 +80,6 @@ software.
 
 Client Installation:
 --------------------
-
-*TODO* fwgui.py does not work yet!  Don't use it!
 
 There are two clients: fwclient.py and fwgui.py.  fwclient.py is a command-line
 program, while fwgui.py is made to run in the notification bar (systray on
@@ -191,10 +189,19 @@ At the time of this writing, wxWidgets does not have full support for Python 3.
 This is why I use Python 2.7.
 
 
+Known Issues:
+-------------
+
+For some reason, fwgui does not put an icon into the notification bar on
+Kubuntu 15.10.  It works find in KDE on Debian.  I have no idea why.
+
+More testing is needed.
+
+
 TODO:
 -----
 
-Finish fwgui.py.
+Make better icons.
 
 I need to write manpages.
 
@@ -227,6 +234,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Changelog:
 ----------
+
+0.2 fwgui is now working
 
 0.1 First release - fwgui.py is not working yet
 
